@@ -1,6 +1,6 @@
-# Vue Property Decorator Transpiler
+# vue-property-decorator-transpiler
 
-Transpiles classes written in vue-property-decorator back to simple Vue component global registration.
+Transpiles classes written in [vue-property-decorator](https://www.npmjs.com/package/vue-property-decorator) back to simple Vue component global registration.
 
 I created this package because I really enjoy the coding experience of vue-property-decorator, but I really don't like the way it runs, with all the modules and requirings etc. I want to develop using vue-property-decorator, but end up with the old-fashioned Vue component global registration code, and this package does exactly that.
 
@@ -26,7 +26,7 @@ var result = transpiler(code);
 Now if the `code` looks like this:
 
 ```typescript
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
+import { Component, Vue, Prop, Watch, Provide, Inject } from 'vue-property-decorator';
 
 @Component({
 	name: "test",
@@ -38,6 +38,10 @@ export default class TestComponent extends Vue {
 	// I add "private" or "public" just to remind myself of different
 	// types of declarations. It makes no difference to the transpiler.
 	private field: string = "abc";
+
+	@Provide('foo') foo = 'foo';
+
+	@Inject('bar') readonly bar!: string;
 
 	get computed() { return 123; }
 
@@ -68,14 +72,26 @@ in which the `script` will look like this (formatted for clarity; the package do
 ```javascript
 Vue.component('test', {
 	template: '#testTemplate',
+	data: () => ({
+		field: "abc",
+		foo: 'foo'
+	}),
 	props: {
 		prop: Object
 	},
-	data: () => ({
-		field: "abc"
+	provide: () => ({
+		'foo': this.foo
 	}),
+	inject: {
+		bar: 'bar'
+	},
 	watch: {
-		'field'(v) { console.log("field: " + v); }
+		'field'(v) {
+			console.log("field: " + v);
+		}
+	},
+	computed: {
+		computed() { return 123; }
 	},
 	methods: {
 		method() {
@@ -84,6 +100,7 @@ Vue.component('test', {
 	},
 	created() { console.log("created"); }
 });
+
 ```
 
 and the template name is also returned for further processing.

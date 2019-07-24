@@ -1,5 +1,5 @@
 
-import ts from "typescript";
+import ts, { ClassElement } from "typescript";
 
 function getFunction(m: ts.FunctionLikeDeclarationBase, s: ts.SourceFile, name?: string) {
 	if(!name) name = m.name.getText(s);
@@ -8,26 +8,15 @@ function getFunction(m: ts.FunctionLikeDeclarationBase, s: ts.SourceFile, name?:
 	return `${name}(${param})${body}`;
 }
 
-function getProp(m: ts.PropertyDeclaration, s: ts.SourceFile) {
+function getDecoratorFirstArgument(m: ClassElement, decorator: string, s: ts.SourceFile) {
 	if(typeof m.decorators === "undefined") return undefined;
 	for(let d of m.decorators) {
 		if(ts.isCallExpression(d.expression) &&
 			ts.isIdentifier(d.expression.expression) &&
-			d.expression.expression.escapedText == "Prop" &&
-			d.expression.arguments.length)
-			return d.expression.arguments[0].getText(s)
-	}
-	return undefined;
-}
-
-function getWatchTag(m: ts.MethodDeclaration, s: ts.SourceFile) {
-	if(typeof m.decorators === "undefined") return undefined;
-	for(let d of m.decorators) {
-		if(ts.isCallExpression(d.expression) &&
-			ts.isIdentifier(d.expression.expression) &&
-			d.expression.expression.escapedText == "Watch" &&
-			d.expression.arguments.length)
-			return d.expression.arguments[0].getText(s);
+			d.expression.expression.escapedText == decorator) {
+			if(d.expression.arguments.length) return d.expression.arguments[0].getText(s);
+			else return null;
+		}
 	}
 	return undefined;
 }
@@ -75,7 +64,7 @@ interface TranspileResult {
  * Transpile the default exported class to Vue component global registration.
  * @param code Original Typescript code.
  */
-function VPDtoJs(code: string):TranspileResult {
+function VPDtoJs(code: string): TranspileResult {
 	var sourceFile = ts.createSourceFile("vue.ts", code, ts.ScriptTarget.ESNext, false);
 
 	for(var s of sourceFile.statements) {
@@ -95,22 +84,32 @@ function VPDtoJs(code: string):TranspileResult {
 			let computed: string[] = [];
 			let methods: string[] = [];
 			let events: string[] = [];
+			let provides: string[] = [];
+			let injects: string[] = [];
 
 			for(let m of s.members) {
 				let name = m.name.getText(sourceFile);
 				if(ts.isPropertyDeclaration(m)) {
 					let ini = m.initializer;
 					let init = ini ? ini.getText(sourceFile) : "undefined";
-					let prop = getProp(m, sourceFile);
+					let prop = getDecoratorFirstArgument(m, "Prop", sourceFile);
+					let inject = getDecoratorFirstArgument(m, "Inject", sourceFile);
 					if(prop) props.push(`${name}:${prop}`);
-					else data.push(`${name}:${init}`);
+					else if(inject !== undefined) {
+						if(inject == null) inject = `'${name}'`;
+						injects.push(`${name}: ${inject}`);
+					} else {
+						data.push(`${name}:${init}`);
+						let provide = getDecoratorFirstArgument(m, "Provide", sourceFile);
+						if(provide) provides.push(`${provide}: this.${name}`);
+					}
 				}
 				if(ts.isGetAccessor(m)) {
 					computed.push(getFunction(m, sourceFile));
 				}
 				if(ts.isMethodDeclaration(m)) {
 					let func = getFunction(m, sourceFile);
-					let tag = getWatchTag(m, sourceFile);
+					let tag = getDecoratorFirstArgument(m, "Watch", sourceFile);
 					if(tag) watch.push(getFunction(m, sourceFile, tag));
 					else {
 						switch(name) {
@@ -134,6 +133,8 @@ function VPDtoJs(code: string):TranspileResult {
 
 			if(data.length) options.push(`data: () => ({ ${data.join(",")} })`);
 			if(props.length) options.push(`props: { ${props.join(",")} }`);
+			if(provides.length) options.push(`provide:() => ({ ${provides.join(",")} })`);
+			if(injects.length) options.push(`inject: { ${injects.join(",")} }`);
 			if(watch.length) options.push(`watch: { ${watch.join(",")} }`);
 			if(computed.length) options.push(`computed: { ${computed.join(",")} }`);
 			if(methods.length) options.push(`methods: { ${methods.join(",")} }`);
