@@ -99,9 +99,9 @@ function VPDtoJs(code: string): TranspileResult {
 						if(inject == null) inject = `'${name}'`;
 						injects.push(`${name}: ${inject}`);
 					} else {
+						data.push(`${name}:${init}`);
 						let provide = getDecoratorFirstArgument(m, "Provide", sourceFile);
-						if(provide) provides.push(`${provide}: ${init}`);
-						else data.push(`${name}:${init}`);
+						if(provide) provides.push(`${provide}: this.${name}`);
 					}
 				}
 				if(ts.isGetAccessor(m)) {
@@ -131,9 +131,9 @@ function VPDtoJs(code: string): TranspileResult {
 
 			let options: string[] = [`template: '${template}'`];
 
-			if(data.length) options.push(`data: () => ({ ${data.join(",")} })`);
+			if(data.length) options.push(`data() { return { ${data.join(",")} }; }`);
 			if(props.length) options.push(`props: { ${props.join(",")} }`);
-			if(provides.length) options.push(`provide:() => ({ ${provides.join(",")} })`);
+			if(provides.length) options.push(`provide() { return { ${provides.join(",")} }; }`);
 			if(injects.length) options.push(`inject: { ${injects.join(",")} }`);
 			if(watch.length) options.push(`watch: { ${watch.join(",")} }`);
 			if(computed.length) options.push(`computed: { ${computed.join(",")} }`);

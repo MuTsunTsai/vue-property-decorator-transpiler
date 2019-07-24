@@ -72,15 +72,20 @@ in which the `script` will look like this (formatted for clarity; the package do
 ```javascript
 Vue.component('test', {
 	template: '#testTemplate',
-	data: () => ({
-		field: "abc"
-	}),
+	data() {
+		return {
+			field: "abc",
+			foo: 'foo'
+		};
+	},
 	props: {
 		prop: Object
 	},
-	provide: () => ({
-		'foo': 'foo'
-	}),
+	provide() {
+		return {
+			'foo': this.foo
+		};
+	},
 	inject: {
 		bar: 'bar'
 	},
@@ -99,7 +104,6 @@ Vue.component('test', {
 	},
 	created() { console.log("created"); }
 });
-
 ```
 
 and the template name is also returned for further processing.
