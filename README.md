@@ -73,14 +73,13 @@ in which the `script` will look like this (formatted for clarity; the package do
 Vue.component('test', {
 	template: '#testTemplate',
 	data: () => ({
-		field: "abc",
-		foo: 'foo'
+		field: "abc"
 	}),
 	props: {
 		prop: Object
 	},
 	provide: () => ({
-		'foo': this.foo
+		'foo': 'foo'
 	}),
 	inject: {
 		bar: 'bar'

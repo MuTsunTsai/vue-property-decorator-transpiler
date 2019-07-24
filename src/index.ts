@@ -99,9 +99,9 @@ function VPDtoJs(code: string): TranspileResult {
 						if(inject == null) inject = `'${name}'`;
 						injects.push(`${name}: ${inject}`);
 					} else {
-						data.push(`${name}:${init}`);
 						let provide = getDecoratorFirstArgument(m, "Provide", sourceFile);
-						if(provide) provides.push(`${provide}: this.${name}`);
+						if(provide) provides.push(`${provide}: ${init}`);
+						else data.push(`${name}:${init}`);
 					}
 				}
 				if(ts.isGetAccessor(m)) {
