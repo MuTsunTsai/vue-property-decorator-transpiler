@@ -1,0 +1,27 @@
+{
+	"name": "vue-property-decorator-transpiler",
+	"version": "1.0.0",
+	"description": "Transpiles classes written in vue-property-decorator back to simple Vue component global registration.",
+	"main": "lib/index.js",
+	"scripts": {
+		"test": "echo \"No test specified.\""
+	},
+	"keywords": [
+		"vue",
+		"typescript",
+		"decorator",
+		"component"
+	],
+	"author": "Mu-Tsun Tsai",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/MuTsunTsai/vue-property-decorator-transpiler.git"
+	},
+	"license": "MIT",
+	"dependencies": {
+		"typescript": "^3.5.3"
+	},
+	"files": [
+		"lib"
+	]
+}
