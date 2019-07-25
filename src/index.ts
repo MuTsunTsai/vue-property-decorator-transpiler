@@ -8,14 +8,13 @@ function getFunction(m: ts.FunctionLikeDeclarationBase, s: ts.SourceFile, name?:
 	return `${name}(${param})${body}`;
 }
 
-function getDecoratorFirstArgument(m: ClassElement, decorator: string, s: ts.SourceFile) {
+function getDecoratorArguments(m: ClassElement, decorator: string, s: ts.SourceFile) {
 	if(typeof m.decorators === "undefined") return undefined;
 	for(let d of m.decorators) {
 		if(ts.isCallExpression(d.expression) &&
 			ts.isIdentifier(d.expression.expression) &&
 			d.expression.expression.escapedText == decorator) {
-			if(d.expression.arguments.length) return d.expression.arguments[0].getText(s);
-			else return null;
+			return d.expression.arguments.map(a => a.getText(s));
 		}
 	}
 	return undefined;
@@ -60,6 +59,15 @@ interface TranspileResult {
 	template: string;
 }
 
+const VueEvents = [
+	"beforeCreate", "created",
+	"beforeMount", "mounted",
+	"beforeUpdate", "updated",
+	"activated", "deactivated",
+	"beforeDestroy", "destroyed",
+	"errorCaptured"
+];
+
 /**
  * Transpile the default exported class to Vue component global registration.
  * @param code Original Typescript code.
@@ -92,15 +100,15 @@ function VPDtoJs(code: string): TranspileResult {
 				if(ts.isPropertyDeclaration(m)) {
 					let ini = m.initializer;
 					let init = ini ? ini.getText(sourceFile) : "undefined";
-					let prop = getDecoratorFirstArgument(m, "Prop", sourceFile);
-					let inject = getDecoratorFirstArgument(m, "Inject", sourceFile);
-					if(prop) props.push(`${name}:${prop}`);
+					let prop = getDecoratorArguments(m, "Prop", sourceFile);
+					let inject = getDecoratorArguments(m, "Inject", sourceFile);
+					if(prop) props.push(`${name}:${prop[0]}`);
 					else if(inject !== undefined) {
-						if(inject == null) inject = `'${name}'`;
-						injects.push(`${name}: ${inject}`);
+						if(!inject.length) inject[0] = `'${name}'`;
+						injects.push(`${name}: ${inject[0]}`);
 					} else {
 						data.push(`${name}:${init}`);
-						let provide = getDecoratorFirstArgument(m, "Provide", sourceFile);
+						let provide = getDecoratorArguments(m, "Provide", sourceFile);
 						if(provide) provides.push(`${provide}: this.${name}`);
 					}
 				}
@@ -109,22 +117,11 @@ function VPDtoJs(code: string): TranspileResult {
 				}
 				if(ts.isMethodDeclaration(m)) {
 					let func = getFunction(m, sourceFile);
-					let tag = getDecoratorFirstArgument(m, "Watch", sourceFile);
-					if(tag) watch.push(getFunction(m, sourceFile, tag));
+					let tag = getDecoratorArguments(m, "Watch", sourceFile);
+					if(tag) watch.push(getFunction(m, sourceFile, tag[0]));
 					else {
-						switch(name) {
-							case "beforeCreate":
-							case "created":
-							case "beforeMount":
-							case "mounted":
-							case "beforeUpdate":
-							case "updated":
-							case "beforeDestroy":
-							case "destroyed":
-								events.push(func); break;
-							default:
-								methods.push(func);
-						}
+						if(VueEvents.includes(name)) events.push(func);
+						else methods.push(func);
 					}
 				}
 			}

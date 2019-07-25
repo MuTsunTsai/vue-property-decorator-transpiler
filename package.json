@@ -4,7 +4,7 @@
 	"description": "Transpiles classes written in vue-property-decorator back to simple Vue component global registration.",
 	"main": "lib/index.js",
 	"scripts": {
-		"test": "echo \"No test specified.\""
+		"test": "cd test&&node test.js"
 	},
 	"keywords": [
 		"vue",
@@ -22,6 +22,7 @@
 		"typescript": "^3.5.3"
 	},
 	"devDependencies": {
+		"js-beautify": "^1.10.1",
 		"vue-property-decorator": "^8.2.1"
 	},
 	"files": [
