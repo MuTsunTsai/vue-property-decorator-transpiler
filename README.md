@@ -33,7 +33,9 @@ import { Component, Vue, Prop, Watch, Provide, Inject } from 'vue-property-decor
 	template: "#testTemplate"
 })
 export default class TestComponent extends Vue {
-	@Prop(Object) prop: Object;
+	@Prop(Object) readonly prop!: Object;
+	@Prop(String) readonly text: string = "default";		// one way to define default value
+	@Prop({default: "default"}) readonly text2!: string;	// another way to define default value
 
 	// I add "private" or "public" just to remind myself of different
 	// types of declarations. It makes no difference to the transpiler.
@@ -79,7 +81,14 @@ Vue.component('test', {
 		};
 	},
 	props: {
-		prop: Object
+		prop: Object,
+		text: {
+			type: String,
+			default: "default"
+		},
+		text2: {
+			default: "default"
+		}
 	},
 	provide() {
 		return {

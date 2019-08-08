@@ -59,13 +59,19 @@ interface TranspileResult {
 	template: string;
 }
 
-const VueEvents = [
-	"beforeCreate", "created",
-	"beforeMount", "mounted",
-	"beforeUpdate", "updated",
-	"activated", "deactivated",
-	"beforeDestroy", "destroyed",
-	"errorCaptured"
+var LIFECYCLE_HOOKS = [
+    'beforeCreate',
+    'created',
+    'beforeMount',
+    'mounted',
+    'beforeUpdate',
+    'updated',
+    'beforeDestroy',
+    'destroyed',
+    'activated',
+    'deactivated',
+    'errorCaptured',
+    'serverPrefetch'
 ];
 
 /**
@@ -102,8 +108,10 @@ function VPDtoJs(code: string): TranspileResult {
 					let init = ini ? ini.getText(sourceFile) : "undefined";
 					let prop = getDecoratorArguments(m, "Prop", sourceFile);
 					let inject = getDecoratorArguments(m, "Inject", sourceFile);
-					if(prop) props.push(`${name}:${prop[0]}`);
-					else if(inject !== undefined) {
+					if(prop) {
+						if(ini) props.push(`${name}:{type:${prop[0]},default:${init}}`);
+						else props.push(`${name}:${prop[0]}`);
+					} else if(inject !== undefined) {
 						if(!inject.length) inject[0] = `'${name}'`;
 						injects.push(`${name}: ${inject[0]}`);
 					} else {
@@ -120,7 +128,7 @@ function VPDtoJs(code: string): TranspileResult {
 					let tag = getDecoratorArguments(m, "Watch", sourceFile);
 					if(tag) watch.push(getFunction(m, sourceFile, tag[0]));
 					else {
-						if(VueEvents.includes(name)) events.push(func);
+						if(LIFECYCLE_HOOKS.includes(name)) events.push(func);
 						else methods.push(func);
 					}
 				}
