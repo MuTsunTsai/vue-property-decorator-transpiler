@@ -1,5 +1,5 @@
 
-import ts, { ClassElement } from "typescript";
+import ts, { ClassElement, SyntaxKind } from "typescript";
 
 function getFunction(m: ts.FunctionLikeDeclarationBase, s: ts.SourceFile, name?: string) {
 	if(!name) name = m.name.getText(s);
@@ -59,19 +59,20 @@ interface TranspileResult {
 	template: string;
 }
 
+/** Built-in hooks of Vue.js */
 var LIFECYCLE_HOOKS = [
-    'beforeCreate',
-    'created',
-    'beforeMount',
-    'mounted',
-    'beforeUpdate',
-    'updated',
-    'beforeDestroy',
-    'destroyed',
-    'activated',
-    'deactivated',
-    'errorCaptured',
-    'serverPrefetch'
+	'beforeCreate',
+	'created',
+	'beforeMount',
+	'mounted',
+	'beforeUpdate',
+	'updated',
+	'beforeDestroy',
+	'destroyed',
+	'activated',
+	'deactivated',
+	'errorCaptured',
+	'serverPrefetch'
 ];
 
 /**
@@ -125,6 +126,12 @@ function VPDtoJs(code: string): TranspileResult {
 				}
 				if(ts.isMethodDeclaration(m)) {
 					let func = getFunction(m, sourceFile);
+					if(m.modifiers) for(let mod of m.modifiers) {
+						if(mod.kind == SyntaxKind.AsyncKeyword) {
+							func = "async " + func;
+							break;
+						}
+					}
 					let tag = getDecoratorArguments(m, "Watch", sourceFile);
 					if(tag) watch.push(getFunction(m, sourceFile, tag[0]));
 					else {
@@ -145,9 +152,9 @@ function VPDtoJs(code: string): TranspileResult {
 			if(methods.length) options.push(`methods: { ${methods.join(",")} }`);
 			options.push(...events);
 
-			// 統整成 Vue 的元件語法
+			// Put into Vue component syntax
 			let output = `Vue.component('${comName}', { ${options.join(",")} });`;
-			// 轉換成 JavaScript
+			// Transpile into JavaScript
 			output = ts.transpile(output, { target: ts.ScriptTarget.ESNext });
 			return { script: output, template: templateName };
 		}

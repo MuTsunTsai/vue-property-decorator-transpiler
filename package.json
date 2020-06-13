@@ -4,6 +4,7 @@
 	"description": "Transpiles classes written in vue-property-decorator back to simple Vue component global registration.",
 	"main": "lib/index.js",
 	"scripts": {
+		"version": "git add -A",
 		"test": "cd test&&node test.js"
 	},
 	"keywords": [
