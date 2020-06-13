@@ -1,6 +1,6 @@
 {
 	"name": "vue-property-decorator-transpiler",
-	"version": "1.1.5",
+	"version": "1.2.0",
 	"description": "Transpiles classes written in vue-property-decorator back to simple Vue component global registration.",
 	"main": "lib/index.js",
 	"scripts": {
