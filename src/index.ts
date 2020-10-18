@@ -165,7 +165,12 @@ function VPDtoJs(code: string, template: string): string {
 	let options = classToComponentOptionString(statement, sourceFile);
 
 	if(template) {
-		options.unshift(`render() { ${compile(template).render} }`);
+		let com = compile(template);
+		if(com.staticRenderFns.length > 0) {
+			let fns = com.staticRenderFns.map(f => `function(){${f}}`).join(",");
+			options.unshift(`staticRenderFns: [ ${fns} ]`);
+		}
+		options.unshift(`render() { ${com.render} }`);
 	} else if('template' in option) {
 		options.unshift(`template: '#${comName}'`);
 	} else if(option.template) {
