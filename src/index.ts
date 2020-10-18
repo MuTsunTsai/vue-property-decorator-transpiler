@@ -34,11 +34,13 @@ function getComponentOption(dec: ts.ClassDeclaration): componentOption | undefin
 				if(ts.isObjectLiteralExpression(op)) {
 					let result: componentOption = {};
 					for(let p of op.properties) {
-						if(ts.isPropertyAssignment(p) &&
-							ts.isIdentifier(p.name) &&
-							ts.isStringLiteral(p.initializer)) {
-							if(p.name.escapedText == "name") result.name = p.initializer.text;
-							if(p.name.escapedText == "template") result.template = p.initializer.text;
+						if(ts.isPropertyAssignment(p) && ts.isIdentifier(p.name)) {
+							if(ts.isStringLiteral(p.initializer)) {
+								if(p.name.escapedText == "name") result.name = p.initializer.text;
+								if(p.name.escapedText == "template") result.template = p.initializer.text;
+							} else if(p.name.escapedText == "mixins") {
+								result.mixins = p.initializer;
+							}
 						}
 					}
 					return result;
@@ -51,6 +53,7 @@ function getComponentOption(dec: ts.ClassDeclaration): componentOption | undefin
 interface componentOption {
 	name?: string;
 	template?: string;
+	mixins?: ts.Expression;
 }
 
 /** Built-in hooks of Vue.js */
@@ -85,7 +88,11 @@ function findClassDeclaration(statements: readonly ts.Statement[]) {
 	throw new Error("Cannot find class declaration");
 }
 
-function classToComponentOptionString(statement: ts.ClassDeclaration, sourceFile: ts.SourceFile): string[] {
+function classToComponentOptionString(
+	statement: ts.ClassDeclaration,
+	sourceFile: ts.SourceFile,
+	option: componentOption
+): string[] {
 	let props: string[] = [];
 	let data: string[] = [];
 	let watch: string[] = [];
@@ -138,6 +145,8 @@ function classToComponentOptionString(statement: ts.ClassDeclaration, sourceFile
 
 	let options: string[] = [];
 
+	if(option.mixins) options.push(`mixins: ${option.mixins.getText(sourceFile)}`);
+
 	if(data.length) options.push(`data() { return { ${data.join(",")} }; }`);
 	if(props.length) options.push(`props: { ${props.join(",")} }`);
 	if(provides.length) options.push(`provide() { return { ${provides.join(",")} }; }`);
@@ -162,7 +171,7 @@ function VPDtoJs(code: string, template: string): string {
 	let comName = "name" in option ? option.name : statement.name?.escapedText.toString().toLowerCase();
 	if(!comName) throw new Error("Component needs to have a name");
 
-	let options = classToComponentOptionString(statement, sourceFile);
+	let options = classToComponentOptionString(statement, sourceFile, option);
 
 	if(template) {
 		let com = compile(template);
