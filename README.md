@@ -23,6 +23,8 @@ var transpiler = require('vue-property-decorator-transpiler');
 var result = transpiler(code);
 ```
 
+Since version 2, you can pass a template string to `transpiler` as a second argument, and it will be precompiled into render function in the resulted code.
+
 Now if the `code` looks like this:
 
 ```typescript
@@ -61,15 +63,7 @@ export default class TestComponent extends Vue {
 };
 ```
 
-The `result` will be
-
-```javascript
-{
-	script: "...",
-	template: "testTemplate"
-}
-```
-in which the `script` will look like this (formatted for clarity; the package does not format the output code, so that you can use any other package for that purpose)
+The `result` will look like this (formatted for clarity; the package does not format the output code, so that you can use any other package for that purpose)
 
 ```javascript
 Vue.component('test', {
@@ -114,7 +108,5 @@ Vue.component('test', {
 	created() { console.log("created"); }
 });
 ```
-
-and the template name is also returned for further processing.
 
 If the `name` option is not specified in the `@Component` declaration, it will use the lowercased class name as the name of the component; and if the `template` option is not spcified, it will assume that the template has an id equals to the name of the component.
