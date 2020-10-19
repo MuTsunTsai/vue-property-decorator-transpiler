@@ -54,6 +54,7 @@ interface componentOption {
 	name?: string;
 	template?: string;
 	mixins?: ts.Expression;
+	extends?: string;
 }
 
 /** Built-in hooks of Vue.js */
@@ -79,9 +80,16 @@ function findClassDeclaration(statements: readonly ts.Statement[]) {
 			s.modifiers?.some(m => m.kind == ts.SyntaxKind.DefaultKeyword)) {
 
 			let comOption = getComponentOption(s);
-			if(comOption !== undefined) return {
-				statement: s,
-				option: comOption
+			if(comOption !== undefined) {
+				let exp = s.heritageClauses?.[0].types?.[0].expression;
+				if(exp && ts.isIdentifier(exp)) {
+					let parent = exp.escapedText as string;
+					if(parent != "Vue") comOption.extends = parent;
+				}
+				return {
+					statement: s,
+					option: comOption
+				};
 			}
 		}
 	}
@@ -145,7 +153,8 @@ function classToComponentOptionString(
 
 	let options: string[] = [];
 
-	if(option.mixins) options.push(`mixins: ${option.mixins.getText(sourceFile)}`);
+	if(option.extends) options.push(`mixins: [${option.extends}]`);
+	else if(option.mixins) options.push(`mixins: ${option.mixins.getText(sourceFile)}`);
 
 	if(data.length) options.push(`data() { return { ${data.join(",")} }; }`);
 	if(props.length) options.push(`props: { ${props.join(",")} }`);
@@ -180,12 +189,8 @@ function VPDtoJs(code: string, template: string): string {
 			options.unshift(`staticRenderFns: [ ${fns} ]`);
 		}
 		options.unshift(`render() { ${com.render} }`);
-	} else if('template' in option) {
-		options.unshift(`template: '#${comName}'`);
 	} else if(option.template) {
 		options.unshift(`template: '${option.template}'`);
-	} else {
-		throw new Error("Cannot resolve template");
 	}
 
 	// Put into Vue component syntax
