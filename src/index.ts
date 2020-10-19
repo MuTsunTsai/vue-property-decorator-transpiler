@@ -172,12 +172,12 @@ function classToComponentOptionString(
  * Transpile the default exported class to Vue component global registration.
  * @param code Original Typescript code.
  */
-function VPDtoJs(code: string, template: string): string {
+function VPDtoJs(code: string, template: string, constMode: boolean = false): string {
 	var sourceFile = ts.createSourceFile("vue.ts", code, ts.ScriptTarget.ESNext, false);
 
 	var { statement, option } = findClassDeclaration(sourceFile.statements);
 
-	let comName = "name" in option ? option.name : statement.name?.escapedText.toString().toLowerCase();
+	let comName = "name" in option ? option.name : statement.name?.escapedText.toString();
 	if(!comName) throw new Error("Component needs to have a name");
 
 	let options = classToComponentOptionString(statement, sourceFile, option);
@@ -194,7 +194,9 @@ function VPDtoJs(code: string, template: string): string {
 	}
 
 	// Put into Vue component syntax
-	let output = `Vue.component('${comName}', { ${options.join(",")} });`;
+	let output = constMode ?
+		`const ${comName} =  { ${options.join(",")} };` :
+		`Vue.component('${comName.toLowerCase()}', { ${options.join(",")} });`;
 
 	// Transpile into JavaScript
 	output = ts.transpile(output, { target: ts.ScriptTarget.ESNext });
