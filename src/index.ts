@@ -135,13 +135,13 @@ function classToComponentOptionString(
 			computed.push(getFunction(member, sourceFile));
 		}
 		if(ts.isMethodDeclaration(member)) {
-			let func = getFunction(member, sourceFile);
+			let func = getFunction(member, sourceFile), abstract = false;
 			if(member.modifiers) for(let mod of member.modifiers) {
-				if(mod.kind == SyntaxKind.AsyncKeyword) {
-					func = "async " + func;
-					break;
-				}
+				if(mod.kind == SyntaxKind.AbstractKeyword) abstract = true;
+				if(mod.kind == SyntaxKind.AsyncKeyword) func = "async " + func;
 			}
+			if(abstract) continue;
+
 			let tag = getDecoratorArguments(member, "Watch", sourceFile);
 			if(tag) watch.push(getFunction(member, sourceFile, tag[0]));
 			else {
